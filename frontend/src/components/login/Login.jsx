@@ -1,93 +1,53 @@
 import './Login.css'
-import {useNavigate} from "react-router-dom";
+import {Link} from "react-router-dom";
+import { FaFacebook } from "react-icons/fa";
+import {FcGoogle} from "react-icons/fc";
+
 const Login = () => {
 
-    const handleSignup = () => {
-        // naviagte to signup pimport { useNavigate } from 'react-router-dom';
-
-        const navigate = useNavigate();
-        navigate('/signup');
-
-    }
+    // const navigate = useNavigate();
+    // const handleSignup = () => {
+    //     navigate('/signup');
+    // }
     return (
-        <section className="container forms">
-            <div className="form login">
-                <div className="form-content">
-                    <header>Login</header>
-                    <form action="#">
-                        <div className="field input-field">
-                            <input type="email" placeholder="Email" className="input"/>
-                        </div>
-                        <div className="field input-field">
-                            <input type="password" placeholder="Password" className="password"/>
-                            <i className='bx bx-hide eye-icon'></i>
-                        </div>
-                        <div className="form-link">
-                            <a href="#" className="forgot-pass">Forgot password?</a>
-                        </div>
-                        <div className="field button-field">
-                            <button>Login</button>
-                        </div>
-                    </form>
-                    <div className="form-link">
-                        <span>
-                            Don&apos;t have an account?
-                            <a href="#" className="link signup-link" onClick={handleSignup}>Signup</a>
-                        </span>
-                    </div>
+        <div className="container">
+            <header>Login Form</header>
+            <form>
+                <div className="input-field">
+                    <input type="text" required/>
+                    <label>Email or Username</label>
                 </div>
-                <div className="line"></div>
-                <div className="media-options">
-                    <a href="#" className="field facebook">
-                        <i className='bx bxl-facebook facebook-icon'></i>
-                        <span>Login with Facebook</span>
-                    </a>
-                </div>
-                <div className="media-options">
-                    <a href="#" className="field google">
-                        <img src="images/google.png" alt="" className="google-img"/>
-                        <span>Login with Google</span>
-                    </a>
-                </div>
-            </div>
+                <div className="input-field">
+                    <input className="pswrd" type="password" required/>
+                    {/*<span className="show">SHOW</span>*/}
+                    <label>Password</label>
 
-            <div className="form signup">
-                <div className="form-content">
-                    <header>Signup</header>
-                    <form action="#">
-                        <div className="field input-field">
-                            <input type="email" placeholder="Email" className="input"/>
-                        </div>
-                        <div className="field input-field">
-                            <input type="password" placeholder="Create password" className="password"/>
-                        </div>
-                        <div className="field input-field">
-                            <input type="password" placeholder="Confirm password" className="password"/>
-                            <i className='bx bx-hide eye-icon'></i>
-                        </div>
-                        <div className="field button-field">
-                            <button>Signup</button>
-                        </div>
-                    </form>
-                    <div className="form-link">
-                        <span>Already have an account? <a href="#" className="link login-link">Login</a></span>
-                    </div>
                 </div>
-                <div className="line"></div>
-                <div className="media-options">
-                    <a href="#" className="field facebook">
-                        <i className='bx bxl-facebook facebook-icon'></i>
-                        <span>Login with Facebook</span>
-                    </a>
+                <div className="button">
+                    <div className="inner"></div>
+                    <button>LOGIN</button>
                 </div>
-                <div className="media-options">
-                    <a href="#" className="field google">
-                        <img src="images/google.png" alt="Google" className="google-img"/>
-                        <span>Login with Google</span>
-                    </a>
+            </form>
+            <div className="auth">
+                Or login with
+            </div>
+            <div className="links">
+                <div className="facebook">
+                    <i className="fab fa-facebook-square">
+                        <FaFacebook/>
+                        <span>Facebook</span></i>
+                </div>
+                <div className="google">
+                    <i className="fab fa-google-plus-square">
+                        <FcGoogle />
+                        <span>Google</span></i>
                 </div>
             </div>
-        </section>
+            <div className="signup">
+                Not a member? <Link to="/signup">Signup</Link>
+            </div>
+        </div>
+
     )
 }
 export default Login

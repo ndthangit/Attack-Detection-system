@@ -1,8 +1,7 @@
-
+import "./Signup.css"
 const Signup = () => {
     return (
         <section className="container forms">
-
             <div className="form signup">
                 <div className="form-content">
                     <header>Signup</header>

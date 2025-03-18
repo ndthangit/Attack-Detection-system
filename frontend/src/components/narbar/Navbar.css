@@ -1,0 +1,45 @@
+.navbar {
+    background-color: hsl(199, 70%, 24%);
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid white;
+    width: 100%;
+    color: white;
+
+}
+.navbar .font {
+    color: white;
+}
+
+.navbar .button {
+    display: flex;
+    align-items: center;
+    padding: 5px 10px 5px 10px;
+    height: 100%;
+}
+
+
+.navbar .left {
+    display: flex;
+    align-items: center;
+}
+
+
+/*.dropdown .dropbtn {*/
+/*    font-size: 16px;*/
+/*    border: none;*/
+/*    outline: none;*/
+/*    color: white;*/
+/*    padding: 14px 16px;*/
+/*    background-color: inherit;*/
+/*    font-family: inherit;*/
+/*    margin: 0;*/
+/*}*/
+
+
+
+
+.customed-icon {
+    margin-right: 5px;
+    font-size: large;
+}
