@@ -14,8 +14,7 @@ async def put_data_training():
             "match_all": {}
         }
     }
-    indexs = client.get
-    response = client.search(index="logs-bgl-*", body=query, size=1000)  # size là số lượng bản ghi cần lấy
+    response = client.search(index="aminer-fox", body=query, size=1000)  # size là số lượng bản ghi cần lấy
 
     data = [hit["_source"] for hit in response["hits"]["hits"]]
 
@@ -28,8 +27,7 @@ async def put_data_Testing():
             "match_all": {}
         }
     }
-    indexs = client.get
-    response = client.search(index="logs-bgl-*", body=query, size=1000)
+    response = client.search(index="wazuh-fox", body=query, size=1000)
 
     data = [hit["_source"] for hit in response["hits"]["hits"]]
 

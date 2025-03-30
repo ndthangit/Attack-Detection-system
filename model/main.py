@@ -1,4 +1,7 @@
 from fastapi import FastAPI
+import mlflow
+# mlflow server  --backend-store-uri postgresql://postgres:postgres@localhost:5433/model  --artifacts-destination s3://bucket  --host 0.0.0.0  --port 5000
+mlflow.autolog()
 app = FastAPI()
 # app.include_router(training_router, prefix="/data_train")
 @app.get("/")

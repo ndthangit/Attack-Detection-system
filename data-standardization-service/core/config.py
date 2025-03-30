@@ -10,5 +10,7 @@ class Settings(BaseSettings):
     ELASTIC_USERNAME: str = os.getenv("ELASTIC_USERNAME")
     ELASTIC_PASSWORD: str = os.getenv("ELASTIC_PASSWORD")
 
+
+
 settings = Settings()
 # print(settings)

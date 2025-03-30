@@ -245,6 +245,62 @@ services:
       timeout: 5s
       retries: 5
   
+  # MinIO server
+  minio:
+    image: minio/minio
+    expose:
+      - "9000"
+    ports:
+      - "9000:9000"
+      # MinIO Console is available at http://localhost:9001
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: "minio_user"
+      MINIO_ROOT_PASSWORD: "minio_password"
+    healthcheck:
+      test: timeout 5s bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1
+      interval: 1s
+      timeout: 10s
+      retries: 5
+    command: server /data --console-address ":9001"
+  # Create a bucket named "bucket" if it doesn't exist
+  minio-create-bucket:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      bash -c "
+      mc alias set minio http://minio:9000 minio_user minio_password &&
+      if ! mc ls minio/bucket; then
+        mc mb minio/bucket
+      else
+        echo 'bucket already exists'
+      fi
+      "
+    # MLflow Server
+  mlflow:
+    build:
+      context: ./mlflow
+      dockerfile: Dockerfile
+    container_name: mlflow_server
+    # restart: always
+    depends_on:
+      attack-web-db:
+        condition: service_healthy
+      minio-create-bucket:
+        condition: service_completed_successfully
+    environment:
+      MLFLOW_TRACKING_URI: "http://127.0.0.1:5000"
+      MLFLOW_S3_ENDPOINT_URL: "http://minio:9000"
+      AWS_ACCESS_KEY_ID: "minio_user"
+      AWS_SECRET_ACCESS_KEY: "minio_password"
+    command: mlflow server --backend-store-uri postgresql://postgres:postgres@attack-web-db:5432/model --artifacts-destination s3://bucket --host 0.0.0.0 --port 5000
+    networks:
+      - attack-web
+    ports:
+      - "5000:5000"
+  
   data-standardization-service:
     build:
       context: ./data-standardization-service
@@ -268,57 +324,101 @@ services:
 
     networks:
       - attack-web
+  
+  ai-supervisor:
+    build:
+      context: ./mlflow/AISupervisor
+      dockerfile: Dockerfile
+    container_name: ai_supervisor
+    depends_on:
+      - mlflow
+    environment:
+      MLFLOW_TRACKING_URI: "ttp://127.0.0.1:5000"
+    ports:
+      - "8002:8000"
+    networks:
+      - attack-web
+
+  traefik:
+    image: "traefik"
+    # restart: always
+    command:
+      - "--api=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
+      - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
+      - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - traefik_data:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  pre-training-layer:
+    build:
+      context: ./mlflow/pre-training-layer
+      dockerfile: Dockerfile
+    container_name: pre-training-layer
+    ports:
+      - 8003:8001
+    volumes:
+      - ./pre-training-layer:/usr/src/app
+    depends_on:
+      - es01
+      - es02
+      - es03
+      - attack-web-db
+    env_file:
+      - .env
+    environment:
+      - ELASTICSEARCH_HOST=es01
+      - ELASTICSEARCH_PORT=9200
+      - ELASTICSEARCH_USER=elastic
+      - ELASTICSEARCH_PASSWORD=changeme
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=exacted-feature
     
 
 
-  # auth-service:
-  #   build:
-  #     context: ./auth-service
-  #     dockerfile: Dockerfile
-  #   container_name: auth-service
-  #   ports:
-  #     - 8000:8000
-  #   volumes:
-  #     - .:/var/www/html
-  #   depends_on:
-  #     - attack-web-db
-  #   environment:
-  #     - DB_HOST=attack-web-db
-  #     - DB_DATABASE=auth-db
-  #   networks:
-  #     - attack-web
-  #   entrypoint: [ '/bin/sh', '-c' ]
-  #   command:
-  #     - |
-  #       composer install
-  #       php artisan migrate
-  #       php artisan serve --host=0.0.0.0 --port=8000
-  # data-processing-service:
-  #   build:
-  #     context: ./data-processing-service
-  #     dockerfile: Dockerfile
-  #   container_name: data-processing-service
-  #   ports:
-  #     - 8010:8001
-  #   volumes:
-  #     - ./data-processing-service:/usr/src/app
-  #   depends_on:
-  #     - attack-web-db
-  #   environment:
-  #     - DB_HOST=attack-web-db
-  #   networks:
-  #     - attack-web
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    # restart: always
+    ports:
+      - "127.0.0.1:5678:5678"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
+      - traefik.http.routers.n8n.tls=true
+      - traefik.http.routers.n8n.entrypoints=web,websecure
+      - traefik.http.routers.n8n.tls.certresolver=mytlschallenge
+      - traefik.http.middlewares.n8n.headers.SSLRedirect=true
+      - traefik.http.middlewares.n8n.headers.STSSeconds=315360000
+      - traefik.http.middlewares.n8n.headers.browserXSSFilter=true
+      - traefik.http.middlewares.n8n.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.n8n.headers.forceSTSHeader=true
+      - traefik.http.middlewares.n8n.headers.SSLHost=${DOMAIN_NAME}
+      - traefik.http.middlewares.n8n.headers.STSIncludeSubdomains=true
+      - traefik.http.middlewares.n8n.headers.STSPreload=true
+      - traefik.http.routers.n8n.middlewares=n8n@docker
+    environment:
+      - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./local-files:/files
 
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: attack-web-frontend
-  #   ports:
-  #     - "5173:5173"
-  #   networks:
-  #     - attack-web
-  
 
 networks:
   attack-web:
@@ -337,3 +437,5 @@ volumes:
     driver: local
   dbdata:
     driver: local
+  n8n_data:
+  traefik_data:
