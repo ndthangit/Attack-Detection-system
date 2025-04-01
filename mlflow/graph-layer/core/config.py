@@ -18,18 +18,9 @@ class DatabaseSettings(BaseSettings):
     DB_PORT: int = os.getenv("DB_PORT")
     DB_HOST: str = os.getenv("DB_HOST")
 
-class MlflowSettings(BaseSettings):
-    MLFLOW_EXPERIMENT_NAME: str = os.getenv("MLFLOW_EXPERIMENT_NAME")
-    MLFLOW_RUN: str = os.getenv("MLFLOW_RUN")
-    MLFLOW_TRACKING_URI: str = os.getenv("MLFLOW_TRACKING_URI")
-    MLFLOW_S3_ENDPOINT_URL: str = os.getenv("MLFLOW_S3_ENDPOINT_URL")
-    AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY")
-
 
 database_settings = DatabaseSettings()
 print(database_settings)
 
 settings = Settings()
-mlflow_settings = MlflowSettings()
 # print(settings)

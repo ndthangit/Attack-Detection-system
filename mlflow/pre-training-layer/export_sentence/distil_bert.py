@@ -1,7 +1,5 @@
+import mlflow.pyfunc
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 from transformers import DistilBertTokenizer, DistilBertModel
 
 # Kiểm tra và sử dụng GPU nếu có
@@ -26,3 +24,29 @@ def extract_features(text):
     # Lấy embedding của token [CLS], chuyển về CPU trước khi lưu
     sentence_embedding = outputs.last_hidden_state[:, 0, :].detach().cpu().numpy().squeeze()
     return sentence_embedding
+
+class DistilBertFeatureExtractor(mlflow.pyfunc.PythonModel):
+    def __init__(self):
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print(f"Sử dụng thiết bị: {self.device}")
+
+    def load_context(self, context):
+        """Load tokenizer và model khi MLflow khởi tạo"""
+        self.tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
+        self.model = DistilBertModel.from_pretrained("distilbert-base-uncased").to(self.device)
+        self.model.eval()  # Chế độ inference
+
+    def predict(self, context, input_texts):
+        """Xử lý batch text và trả về embeddings"""
+        if isinstance(input_texts, str):
+            input_texts = [input_texts]
+
+        inputs = self.tokenizer(input_texts, return_tensors="pt", truncation=True, padding=True)
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+
+        # Lấy embedding của token [CLS] và chuyển về CPU
+        embeddings = outputs.last_hidden_state[:, 0, :].detach().cpu().numpy()
+        return embeddings.squeeze()  # Giảm chiều nếu đầu vào là 1 text
