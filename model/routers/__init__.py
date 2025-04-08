@@ -1,1 +1,1 @@
-
+from .training import router as training_router
