@@ -78,6 +78,7 @@ class custom_PWAGAT:
                     data_train_y: Nhãn huấn luyện
                     val_data: Tuple (val_x, val_timestamps, val_y) cho validation
                 """
+        self.num_classes = len(data_train_y.unique())
         # 1. Tiền xử lý dữ liệu
         features, labels, delta_t = self._preprocess_data(
             data_train_x, data_timestamps, data_train_y
@@ -98,6 +99,49 @@ class custom_PWAGAT:
 
         # 4. Huấn luyện RL agent
         self._train_rl_agent(train_loader)
+
+        # 5. Validation (nếu có dữ liệu validation)
+        if val_data is not None:
+            val_x, val_timestamps, val_y = val_data
+            val_features, val_labels, val_delta_t = self._preprocess_data(
+                val_x, val_timestamps, val_y
+            )
+            val_dataset = SequenceDataset(val_features, val_labels, val_delta_t, self.seq_len)
+            val_loader = DataLoader(
+                val_dataset,
+                batch_size=self.batch_size_mlp,
+                shuffle=False,
+                num_workers=8,
+                pin_memory=True
+            )
+            self._validate(val_loader)
+
+    def _validate(self, val_loader):
+        """
+        Thực hiện đánh giá trên tập validation
+        """
+        self.generator.eval()
+        self.discriminator.eval()
+
+        total_loss = 0
+        total_samples = 0
+
+        with torch.no_grad():
+            for batch_features, batch_delta_t, batch_labels in val_loader:
+                batch_features = batch_features.to(self.device, non_blocking=True)
+                batch_delta_t = batch_delta_t.to(self.device, non_blocking=True)
+                batch_labels = batch_labels.to(self.device, non_blocking=True)
+
+                # Tính toán dữ liệu giả
+                fake_data, _ = self.generator(batch_features, batch_delta_t)
+
+                # Tính loss
+                reconstruction_loss = nn.MSELoss()(fake_data, batch_features)
+                total_loss += reconstruction_loss.item() * batch_features.size(0)
+                total_samples += batch_features.size(0)
+
+        avg_loss = total_loss / total_samples
+        print(f"Validation Loss: {avg_loss:.4f}")
 
     def _preprocess_data(self, data_x, data_timestamps, data_y):
         """Tiền xử lý dữ liệu đầu vào"""
@@ -204,7 +248,7 @@ class custom_PWAGAT:
         print("Bắt đầu huấn luyện RL agent...")
 
         # Tạo môi trường
-        env = CustomGymEnv(self.generator, dataloader, self.device)
+        env = CustomGymEnv(self.generator, dataloader, self.device,self.latent_size, self.num_classes)
         env = DummyVecEnv([lambda: env])
 
         # Tính toán total timesteps

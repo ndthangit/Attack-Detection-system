@@ -1,3 +1,5 @@
+from typing import List
+
 from stable_baselines3.common.callbacks import BaseCallback
 import numpy as np
 
@@ -19,9 +21,18 @@ class CustomCallback(BaseCallback):
 
         return True
 
-    def _on_rollout_end(self):
-        # Lấy thông tin reward từ buffer
+    def _on_rollout_end(self) -> None:
+        super()._on_rollout_end()
+
         if len(self.model.ep_info_buffer) > 0:
             avg_reward = np.mean([ep_info['r'] for ep_info in self.model.ep_info_buffer])
             self.episode_rewards.append(avg_reward)
-            # print(f"Avg Reward: {avg_reward:.4f}")
+
+    def get_last_accuracy(self) -> float:
+        """Trả về độ chính xác của episode gần nhất"""
+        return self.episode_accuracies[-1] if len(self.episode_accuracies) > 0 else 0.0
+
+    def get_last_reward(self) -> float:
+        """Trả về reward trung bình của episode gần nhất"""
+        return self.episode_rewards[-1] if len(self.episode_rewards) > 0 else 0.0
+

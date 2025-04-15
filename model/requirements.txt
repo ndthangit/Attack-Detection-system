@@ -9,5 +9,4 @@ transformers~=4.50.3
 numpy~=2.2.4
 scikit-learn~=1.6.1
 stable-baselines3~=2.6.0
-gym~=0.26.2
-psutil~=5.9.0
+gymnasium~=1.1.1

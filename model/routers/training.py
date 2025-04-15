@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from core.elastic import client
 from purposed_model.custom_PWAGAT import custom_PWAGAT
 import pandas as pd
+from sklearn.model_selection import TimeSeriesSplit
 
 router = APIRouter()
 

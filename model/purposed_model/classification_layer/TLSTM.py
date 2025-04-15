@@ -21,7 +21,12 @@ class TLSTM(nn.Module):
         outputs = []
         for t in range(seq_len):
             x_t = x[:, t, :]  # (batch_size, input_size)
-            dt_t = delta_t[:, t, :]  # (batch_size, 1)
+            # dt_t = delta_t[:, t, :]  # (batch_size, 1)
+            # Handle both 2D and 3D delta_t
+            if delta_t.dim() == 3:
+                dt_t = delta_t[:, t, :]  # (batch_size, 1)
+            else:
+                dt_t = delta_t[:, t].unsqueeze(-1)  # (batch_size, 1)
             h_t, c_t = self.tlstm_cell(x_t, h_t, c_t, dt_t)
             outputs.append(h_t.unsqueeze(1))  # (batch_size, 1, hidden_size)
 

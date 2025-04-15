@@ -15,6 +15,8 @@ class SequenceDataset(Dataset):
         seq_features = self.features[idx:idx+self.seq_len]
         seq_delta_t = self.delta_t[idx:idx+self.seq_len]
         seq_labels = self.labels[idx:idx+self.seq_len]
+        # Ensure delta_t has shape (seq_len, 1)
+        seq_delta_t = seq_delta_t.unsqueeze(-1) if seq_delta_t.dim() == 1 else seq_delta_t
         return seq_features, seq_delta_t, seq_labels
     def get_labels_for_stratification(self):
         # Trả về nhãn phân lớp cho mỗi sample (thường là nhãn cuối cùng trong sequence)
