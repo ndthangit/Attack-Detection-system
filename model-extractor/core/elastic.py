@@ -7,7 +7,6 @@ client = Elasticsearch(
     # verify_certs=False  # Bỏ kiểm tra SSL (hoặc cung cấp đường dẫn CA nếu cần)
     ca_certs="core/ca.crt",
     request_timeout=60
-
 )
 
 # Kiểm tra kết nối khi khởi động
