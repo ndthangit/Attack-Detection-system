@@ -92,7 +92,7 @@ async def training():
     # for name in user_indices:
     #     print(name)
 
-    user_indices = ['aminer-fox']
+    user_indices = ['aminer-fox-test']
 
     for index_name in user_indices:
         print(f"Đang xử lý index: {index_name}")

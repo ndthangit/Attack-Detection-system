@@ -5,7 +5,6 @@ import numpy as np
 from purposed_model.classification_layer.CustomCallback import CustomCallback
 from purposed_model.classification_layer.TLSTMGenerator import TLSTMGenerator
 from purposed_model.classification_layer.Discriminator import Discriminator
-from purposed_model.pre_training_layer.distillbert import DistilBERTFeatureExtractor
 from sklearn.preprocessing import LabelEncoder
 from purposed_model.classification_layer.SequenceDataset import SequenceDataset
 from stable_baselines3 import DQN
@@ -15,11 +14,11 @@ from torch.utils.data import DataLoader
 
 
 class custom_PWAGAT:
+
     def __init__(self,input_size = 768, hidden_size_g = 31, hidden_size_d = 42, dropout_rate_g = 0.42,
                  dropout_rate_d = 0.32,learning_rate_g = 0.008,learning_rate_d = 0.009,num_epochs_g = 25,
                  hidden_size_mlp = 53 ,dropout_rate_mlp = 0.31,learning_rate_mlp = 0.005,num_episodes = 25,
                  batch_size_mlp = 74, seq_len = 10):
-        self.pre_training_layer = DistilBERTFeatureExtractor()
         self.model_name = "custom_PWAGAT_model"
         self.num_classes = None
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -33,6 +32,7 @@ class custom_PWAGAT:
         self.learning_rate_g = learning_rate_g
         self.learning_rate_d = learning_rate_d
         self.num_epochs_g = num_epochs_g  # 152
+
 
         self.hidden_size_mlp = hidden_size_mlp
         self.dropout_rate_mlp = dropout_rate_mlp
@@ -52,7 +52,6 @@ class custom_PWAGAT:
         }
 
         self.seq_len = seq_len
-
     def _init_models(self):
         """Khởi tạo các mô hình và chuyển lên device"""
         self.generator = TLSTMGenerator(
@@ -66,6 +65,8 @@ class custom_PWAGAT:
         ).to(self.device)
 
         self.rl_agent = None  # Sẽ được khởi tạo trong quá trình huấn luyện
+
+        self.label_encoder = LabelEncoder()
 
     def fit(self, data_train_x: pd.DataFrame, data_timestamps: pd.DataFrame,
             data_train_y: pd.DataFrame, val_data=None):
@@ -143,28 +144,27 @@ class custom_PWAGAT:
         avg_loss = total_loss / total_samples
         print(f"Validation Loss: {avg_loss:.4f}")
 
-    def _preprocess_data(self, data_x, data_timestamps, data_y):
+    def _preprocess_data(self, data_x, timestamps, labels):
         """Tiền xử lý dữ liệu đầu vào"""
-        # Trích xuất đặc trưng
-        features = self.pre_training_layer.extract_features(data_x.tolist())
-        features = pd.DataFrame(features)
-
         # Encode nhãn
         label_encoder = LabelEncoder()
         if not hasattr(label_encoder, 'classes_'):
-            label_encoder.fit(data_y.unique())
-        labels = label_encoder.transform(data_y)
+            label_encoder.fit(np.unique(labels))
+        labels = label_encoder.transform(labels)
 
         # Tính delta time
-        data_timestamps = data_timestamps.astype(float).values
-        delta_t = np.diff(data_timestamps, prepend=data_timestamps[0])
+        timestamps = timestamps.astype(float)
+        delta_t = np.diff(timestamps, prepend=timestamps[0])
 
         # Chuyển đổi thành tensor
-        features = torch.tensor(features.values, dtype=torch.float32)
-        labels = torch.tensor(labels, dtype=torch.long)
-        delta_t = torch.tensor(delta_t, dtype=torch.float32).unsqueeze(-1)
+        if not isinstance(data_x, torch.Tensor):
+            data_x = torch.tensor(data_x, dtype=torch.float32)
+        if not isinstance(labels, torch.Tensor):
+            labels = torch.tensor(labels, dtype=torch.long)
+        if not isinstance(delta_t, torch.Tensor):
+            delta_t = torch.tensor(delta_t, dtype=torch.float32).unsqueeze(-1)
 
-        return features, labels, delta_t
+        return data_x, labels, delta_t
 
     def _train_gan(self, dataloader):
         """Huấn luyện GAN"""

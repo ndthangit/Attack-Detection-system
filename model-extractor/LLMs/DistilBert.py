@@ -1,7 +1,6 @@
 import torch
 from transformers import DistilBertTokenizer, DistilBertModel
 
-
 class DistilBERTFeatureExtractor:
     def __init__(self, model_name="distilbert-base-uncased"):
         # Kiểm tra và sử dụng GPU nếu có
