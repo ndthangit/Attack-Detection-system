@@ -7,6 +7,8 @@ COPY ./requirements.txt /usr/src/app/requirements.txt
 # Nâng cấp pip trước
 RUN python -m pip install --upgrade pip
 
+RUN pip install --no-cache-dir hf_xet
+
 # Cài psycopg2 riêng để tránh lỗi biên dịch
 RUN pip install --no-cache-dir psycopg2-binary
 

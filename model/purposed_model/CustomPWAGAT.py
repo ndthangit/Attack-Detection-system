@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import numpy as np
 from purposed_model.classification_layer.CustomCallback import CustomCallback
+from purposed_model.classification_layer.CustomGAN import CustomGAN
+from purposed_model.classification_layer.CustomRL import CustomRL
 from purposed_model.classification_layer.TLSTMGenerator import TLSTMGenerator
 from purposed_model.classification_layer.Discriminator import Discriminator
 from sklearn.preprocessing import LabelEncoder
@@ -11,38 +13,23 @@ from stable_baselines3 import DQN
 from purposed_model.classification_layer.CustomGymEnv import CustomGymEnv
 from stable_baselines3.common.vec_env import DummyVecEnv
 from torch.utils.data import DataLoader
+from purposed_model.graph_embedding_layer.AttackBehaviorGNN import AttackBehaviorGNN
 
 
-class custom_PWAGAT:
+class CustomPWAGAT:
 
-    def __init__(self,input_size = 768, hidden_size_g = 31, hidden_size_d = 42, dropout_rate_g = 0.42,
-                 dropout_rate_d = 0.32,learning_rate_g = 0.008,learning_rate_d = 0.009,num_epochs_g = 25,
-                 hidden_size_mlp = 53 ,dropout_rate_mlp = 0.31,learning_rate_mlp = 0.005,num_episodes = 25,
-                 batch_size_mlp = 74, seq_len = 10):
-        self.model_name = "custom_PWAGAT_model"
+    def __init__(self, gnn_system: AttackBehaviorGNN = None, gan_system: CustomGAN =None, rl_system: CustomRL = None, seq_len= 10):
+
+        self.gnn_system = gnn_system
+        self.model_name = "Custom_PWAGAT"
         self.num_classes = None
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.input_size = input_size
-        self.hidden_size_g = hidden_size_g
-        self.hidden_size_d = hidden_size_d
-        self.latent_size = 128
-        self.output_size = 768
-        self.dropout_rate_g = dropout_rate_g
-        self.dropout_rate_d = dropout_rate_d
-        self.learning_rate_g = learning_rate_g
-        self.learning_rate_d = learning_rate_d
-        self.num_epochs_g = num_epochs_g  # 152
 
+        self.gan_system = gan_system
+        self.rl_system = rl_system
+        self.label_encoder = LabelEncoder()
+        self.seq_len = seq_len
 
-        self.hidden_size_mlp = hidden_size_mlp
-        self.dropout_rate_mlp = dropout_rate_mlp
-        self.learning_rate_mlp = learning_rate_mlp
-        self.num_episodes = num_episodes  # 245
-        self.batch_size_mlp = batch_size_mlp  # Đồng bộ với giá trị đã xác định trước đó
-        self.batch_size_rl = self.batch_size_mlp  # Đồng bộ batch_size_rl với batch_size_mlp
-
-        # Khởi tạo các mô hình
-        self._init_models()
 
         # Theo dõi quá trình huấn luyện
         self.training_history = {
@@ -51,49 +38,47 @@ class custom_PWAGAT:
             'val_metrics': []
         }
 
-        self.seq_len = seq_len
-    def _init_models(self):
-        """Khởi tạo các mô hình và chuyển lên device"""
-        self.generator = TLSTMGenerator(
-            self.input_size, self.hidden_size_g, self.latent_size,
-            self.output_size, dropout_rate=self.dropout_rate_g
-        ).to(self.device)
+    # graph embedding layer
 
-        self.discriminator = Discriminator(
-            self.input_size, self.hidden_size_d,
-            dropout_rate=self.dropout_rate_d
-        ).to(self.device)
+    def create_graph_layer(self, **kwargs):
+         self.gnn_system = AttackBehaviorGNN(**kwargs)
 
-        self.rl_agent = None  # Sẽ được khởi tạo trong quá trình huấn luyện
+    def get_graph_layer(self):
+        return self.gnn_system
 
-        self.label_encoder = LabelEncoder()
+    def get_embedding(self):
+        return pd.DataFrame(self.gnn_system.get_embeddings(layer='last'))
+
+    "classification layer"
+
+    def create_gan_model(self, **kwargs):
+        self.gan_system = CustomGAN(**kwargs)
+
+    def create_rl_agent(self, **kwargs):
+        self.rl_system = CustomRL(self.gan_system.generator,self.gnn_system.num_classes,**kwargs)
+
 
     def fit(self, data_train_x: pd.DataFrame, data_timestamps: pd.DataFrame,
             data_train_y: pd.DataFrame, val_data=None):
         """
-                Huấn luyện toàn bộ mô hình bao gồm GAN và RL agent
+        Huấn luyện toàn bộ mô hình bao gồm GAN và RL agent
 
-                Args:
-                    data_train_x: Dữ liệu huấn luyện (văn bản)
-                    data_timestamps: Timestamp tương ứng
-                    data_train_y: Nhãn huấn luyện
-                    val_data: Tuple (val_x, val_timestamps, val_y) cho validation
-                """
+        Args:
+            data_train_x: Dữ liệu huấn luyện (văn bản)
+            data_timestamps: Timestamp tương ứng
+            data_train_y: Nhãn huấn luyện
+            val_data: Tuple (val_x, val_timestamps, val_y) cho validation
+        """
         self.num_classes = len(data_train_y.unique())
         # 1. Tiền xử lý dữ liệu
-        features, labels, delta_t = self._preprocess_data(
+        features, labels, delta_t = self.gan_system.preprocess_data(
             data_train_x, data_timestamps, data_train_y
         )
 
         # 2. Tạo dataset và dataloader
-        train_dataset = SequenceDataset(features, labels, delta_t, self.seq_len)
-        train_loader = DataLoader(
-            train_dataset,
-            batch_size=self.batch_size_mlp,
-            shuffle=True,
-            num_workers=8,
-            pin_memory=True
-        )
+        # train_dataset = SequenceDataset(features, labels, delta_t)
+
+        train_loader = self.gan_system.create_dataloader(features, labels, delta_t)
 
         # 3. Huấn luyện GAN
         self._train_gan(train_loader)
@@ -143,28 +128,6 @@ class custom_PWAGAT:
 
         avg_loss = total_loss / total_samples
         print(f"Validation Loss: {avg_loss:.4f}")
-
-    def _preprocess_data(self, data_x, timestamps, labels):
-        """Tiền xử lý dữ liệu đầu vào"""
-        # Encode nhãn
-        label_encoder = LabelEncoder()
-        if not hasattr(label_encoder, 'classes_'):
-            label_encoder.fit(np.unique(labels))
-        labels = label_encoder.transform(labels)
-
-        # Tính delta time
-        timestamps = timestamps.astype(float)
-        delta_t = np.diff(timestamps, prepend=timestamps[0])
-
-        # Chuyển đổi thành tensor
-        if not isinstance(data_x, torch.Tensor):
-            data_x = torch.tensor(data_x, dtype=torch.float32)
-        if not isinstance(labels, torch.Tensor):
-            labels = torch.tensor(labels, dtype=torch.long)
-        if not isinstance(delta_t, torch.Tensor):
-            delta_t = torch.tensor(delta_t, dtype=torch.float32).unsqueeze(-1)
-
-        return data_x, labels, delta_t
 
     def _train_gan(self, dataloader):
         """Huấn luyện GAN"""

@@ -18,8 +18,7 @@ def train_with_sb3(generator, dataloader_mlp, num_episodes, device, batch_size_m
     env = CustomGymEnv(generator, dataloader_mlp, device)
     env = DummyVecEnv([lambda: env])
 
-    # Tính toán total timesteps
-    total_timesteps = num_episodes * len(dataloader_mlp) * batch_size_mlp
+    total_timestamps = num_episodes * len(dataloader_mlp) * batch_size_mlp
 
     # Khởi tạo DQN với các tham số
     model = DQN(
@@ -45,7 +44,7 @@ def train_with_sb3(generator, dataloader_mlp, num_episodes, device, batch_size_m
 
     # Huấn luyện
     model.learn(
-        total_timesteps=total_timesteps,
+        total_timesteps=total_timestamps,
         callback=callbacks,
         log_interval=10
     )

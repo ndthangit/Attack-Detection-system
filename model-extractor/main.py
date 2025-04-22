@@ -31,11 +31,12 @@ async def get_exacting():
     data_processing = PreTrainingLayer()
     extractor = DistilBERTFeatureExtractor()
 
+
     # print("Các index người dùng (không phải hệ thống):")
     # for name in user_indices:
     #     print(name)
 
-    user_indices = ['aminer-fox-test']
+    user_indices = ['aminer-fox']
 
     for index_name in user_indices:
         print(f"Đang xử lý index: {index_name}")

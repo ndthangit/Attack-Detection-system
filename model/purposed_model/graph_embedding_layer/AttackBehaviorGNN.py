@@ -52,7 +52,7 @@ class AttackBehaviorGNN:
         self.embeddings = None  # Thêm biến lưu trữ embedding
 
     # ... (giữ nguyên các phương thức hiện có)
-    def prepare_data(self, df, feature_cols=None, timestamp_col='timestamp', label_col='label'):
+    def prepare_data(self, df, feature_cols=None, timestamp_col='timestamps', label_col='label'):
         """
         Prepare graph data from DataFrame
 
