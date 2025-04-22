@@ -2,7 +2,7 @@ from operator import index
 from fastapi import APIRouter
 from sqlalchemy import inspect
 
-from core.config import GraphConfig
+from core.config import GraphConfig, ClassifierParameters
 from core.database import engine
 import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
@@ -45,15 +45,16 @@ async def training():
                 epochs=graphParameter.training.epochs,
                 eval_every=graphParameter.training.eval_every
             )
+
+            data_classifier = model.gnn_system.get_embeddings(layer='last')
+
             'GAN model'
 
+            classifierParameter = ClassifierParameters()
 
-
-
-
-
-
-            # print(f"test:{graphParameter.__dict__}")
+            model.create_gan_model(**classifierParameter.gan.__dict__)
+            model.create_rl_agent(**classifierParameter.rl.__dict__)
+            model.fit(data_classifier,data_raw['timestamps'],data_raw['Label'])
 
             # print(data_raw.columns)
         except Exception as e:

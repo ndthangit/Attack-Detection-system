@@ -174,3 +174,19 @@ class CustomGAN:
             num_workers=8,
             pin_memory=True
         )
+
+    def info(self):
+        """Display model information"""
+        print("===== Model Specifications =====")
+        print(f"Input Size: {self.input_size}")
+        print(f"Output Size: {self.output_size}")
+        print(f"Generator Hidden Size: {self.hidden_size_g}")
+        print(f"Discriminator Hidden Size: {self.hidden_size_d}")
+        print(f"Generator Dropout Rate: {self.dropout_rate_g}")
+        print(f"Discriminator Dropout Rate: {self.dropout_rate_d}")
+        print(f"Generator Learning Rate: {self.learning_rate_g}")
+        print(f"Discriminator Learning Rate: {self.learning_rate_d}")
+        print(f"Number of Epochs: {self.num_epochs_g}")
+        print(f"Batch Size: {self.batch_size}")
+        print(f"Sequence Length: {self.seq_len}")
+        print("===============================")
