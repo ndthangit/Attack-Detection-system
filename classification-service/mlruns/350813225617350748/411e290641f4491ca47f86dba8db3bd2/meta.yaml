@@ -1,0 +1,15 @@
+artifact_uri: file:///E:/Attack%20Recognization%20System/classification-service/mlruns/350813225617350748/411e290641f4491ca47f86dba8db3bd2/artifacts
+end_time: 1746547357574
+entry_point_name: ''
+experiment_id: '350813225617350748'
+lifecycle_stage: active
+run_id: 411e290641f4491ca47f86dba8db3bd2
+run_name: crawling-turtle-737
+run_uuid: 411e290641f4491ca47f86dba8db3bd2
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1746547356510
+status: 4
+tags: []
+user_id: ndtdu

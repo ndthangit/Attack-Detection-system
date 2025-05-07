@@ -1,0 +1,15 @@
+artifact_uri: file:///E:/Attack%20Recognization%20System/classification-service/mlruns/350813225617350748/795fa15d955a4f1bb502b9060ad98859/artifacts
+end_time: 1746547385630
+entry_point_name: ''
+experiment_id: '350813225617350748'
+lifecycle_stage: active
+run_id: 795fa15d955a4f1bb502b9060ad98859
+run_name: traveling-cod-705
+run_uuid: 795fa15d955a4f1bb502b9060ad98859
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1746547384373
+status: 4
+tags: []
+user_id: ndtdu

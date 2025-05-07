@@ -1,0 +1,15 @@
+artifact_uri: file:///E:/Attack%20Recognization%20System/classification-service/mlruns/350813225617350748/b90fd2e89f1245e885148183589a225b/artifacts
+end_time: 1746547193804
+entry_point_name: ''
+experiment_id: '350813225617350748'
+lifecycle_stage: active
+run_id: b90fd2e89f1245e885148183589a225b
+run_name: tasteful-mule-382
+run_uuid: b90fd2e89f1245e885148183589a225b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1746547192749
+status: 4
+tags: []
+user_id: ndtdu

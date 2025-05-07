@@ -1,0 +1,15 @@
+artifact_uri: file:///E:/Attack%20Recognization%20System/classification-service/mlruns/350813225617350748/379dd8c4a14142acbaecac6718d7423a/artifacts
+end_time: 1746548623574
+entry_point_name: ''
+experiment_id: '350813225617350748'
+lifecycle_stage: active
+run_id: 379dd8c4a14142acbaecac6718d7423a
+run_name: crawling-toad-163
+run_uuid: 379dd8c4a14142acbaecac6718d7423a
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1746548622436
+status: 4
+tags: []
+user_id: ndtdu

@@ -19,7 +19,7 @@ class CustomGAN:
         self.hidden_size_g = hidden_size_g
         self.hidden_size_d = hidden_size_d
         self.latent_size = 128
-        self.output_size = 768
+        self.output_size = self.input_size
         self.dropout_rate_g = dropout_rate_g
         self.dropout_rate_d = dropout_rate_d
         self.learning_rate_g = learning_rate_g
@@ -38,8 +38,25 @@ class CustomGAN:
             dropout_rate=self.dropout_rate_d
         ).to(self.device)
 
-        self.label_encoder = LabelEncoder()
+        # self.label_encoder = LabelEncoder()
         self.training_history = {'gan_loss': []}
+        self.info()
+
+    def info(self):
+        """Display model information"""
+        print("===== GAN Model =====")
+        print(f"Input Size: {self.input_size}")
+        print(f"Output Size: {self.output_size}")
+        print(f"Generator Hidden Size: {self.hidden_size_g}")
+        print(f"Discriminator Hidden Size: {self.hidden_size_d}")
+        print(f"Generator Dropout Rate: {self.dropout_rate_g}")
+        print(f"Discriminator Dropout Rate: {self.dropout_rate_d}")
+        print(f"Generator Learning Rate: {self.learning_rate_g}")
+        print(f"Discriminator Learning Rate: {self.learning_rate_d}")
+        print(f"Number of Epochs: {self.num_epochs_g}")
+        print(f"Batch Size: {self.batch_size}")
+        print(f"Sequence Length: {self.seq_len}")
+        print("===============================")
 
     def train(self, dataloader):
         """Huấn luyện GAN"""
@@ -143,50 +160,85 @@ class CustomGAN:
         print(f"Validation Loss: {avg_loss:.4f}")
         return avg_loss
 
+    # def preprocess_data(self, data_x, timestamps, labels):
+    #     """Tiền xử lý dữ liệu đầu vào"""
+    #     # Encode nhãn
+    #     # if not hasattr(self.label_encoder, 'classes_'):
+    #     #     self.label_encoder.fit(np.unique(labels))
+    #     # labels = self.label_encoder.transform(labels)
+    #     if type(labels) not in [float, int]:
+    #          return TypeError(" Error type label")
+    #
+    #     # Tính delta time
+    #     timestamps = timestamps.astype(float)
+    #     delta_t = np.diff(timestamps, prepend=timestamps.iloc[0])
+    #
+    #     # Chuyển đổi thành tensor
+    #     if not isinstance(data_x, torch.Tensor):
+    #         data_x = torch.tensor(data_x, dtype=torch.float32)
+    #     if not isinstance(labels, torch.Tensor):
+    #         labels = torch.tensor(labels, dtype=torch.float32)
+    #     if not isinstance(delta_t, torch.Tensor):
+    #         delta_t = torch.tensor(delta_t, dtype=torch.float32).unsqueeze(-1)
+    #
+    #     return data_x, labels, delta_t
     def preprocess_data(self, data_x, timestamps, labels):
         """Tiền xử lý dữ liệu đầu vào"""
-        # Encode nhãn
-        if not hasattr(self.label_encoder, 'classes_'):
-            self.label_encoder.fit(np.unique(labels))
-        labels = self.label_encoder.transform(labels)
+        # Kiểm tra kiểu dữ liệu của labels
+        if isinstance(labels, (np.ndarray, torch.Tensor)):
+            if not np.issubdtype(labels.dtype, np.integer) and not np.issubdtype(labels.dtype, np.floating):
+                raise TypeError("Labels must be of type int or float.")
+        elif not isinstance(labels, (int, float)):
+            raise TypeError("Labels must be of type int or float.")
 
         # Tính delta time
         timestamps = timestamps.astype(float)
-        delta_t = np.diff(timestamps, prepend=timestamps[0])
+        delta_t = np.diff(timestamps, prepend=timestamps.iloc[0])
 
         # Chuyển đổi thành tensor
         if not isinstance(data_x, torch.Tensor):
             data_x = torch.tensor(data_x, dtype=torch.float32)
         if not isinstance(labels, torch.Tensor):
-            labels = torch.tensor(labels, dtype=torch.long)
+            labels = torch.tensor(labels, dtype=torch.float32)
         if not isinstance(delta_t, torch.Tensor):
             delta_t = torch.tensor(delta_t, dtype=torch.float32).unsqueeze(-1)
 
         return data_x, labels, delta_t
 
-    def create_dataloader(self, features, labels, delta_t):
-        """Tạo dataloader từ dữ liệu đã tiền xử lý"""
-        dataset = SequenceDataset(features, labels, delta_t, self.seq_len)
+    def create_dataset(self, features, delta_t, labels, seq_len):
+        """
+        Tạo dataset từ dữ liệu đã tiền xử lý.
+
+        Args:
+            features (torch.Tensor): Đặc trưng đầu vào.
+            delta_t (torch.Tensor): Delta time.
+            labels (torch.Tensor): Nhãn.
+            seq_len (int): Độ dài chuỗi.
+
+        Returns:
+            SequenceDataset: Dataset cho GAN.
+        """
+        return SequenceDataset(features, labels, delta_t, seq_len)
+
+    def create_dataloader(self, dataset, batch_size=None, shuffle=True):
+        """
+        Tạo DataLoader từ dataset.
+
+        Args:
+            dataset (SequenceDataset): Dataset đã tạo.
+            batch_size (int, optional): Kích thước batch. Nếu None, sử dụng self.batch_size.
+            shuffle (bool): Có xáo trộn dữ liệu không.
+
+        Returns:
+            DataLoader: DataLoader cho GAN.
+        """
+        batch_size = batch_size or self.batch_size
         return DataLoader(
             dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
+            batch_size=batch_size,
+            shuffle=shuffle,
             num_workers=8,
             pin_memory=True
         )
 
-    def info(self):
-        """Display model information"""
-        print("===== Model Specifications =====")
-        print(f"Input Size: {self.input_size}")
-        print(f"Output Size: {self.output_size}")
-        print(f"Generator Hidden Size: {self.hidden_size_g}")
-        print(f"Discriminator Hidden Size: {self.hidden_size_d}")
-        print(f"Generator Dropout Rate: {self.dropout_rate_g}")
-        print(f"Discriminator Dropout Rate: {self.dropout_rate_d}")
-        print(f"Generator Learning Rate: {self.learning_rate_g}")
-        print(f"Discriminator Learning Rate: {self.learning_rate_d}")
-        print(f"Number of Epochs: {self.num_epochs_g}")
-        print(f"Batch Size: {self.batch_size}")
-        print(f"Sequence Length: {self.seq_len}")
-        print("===============================")
+

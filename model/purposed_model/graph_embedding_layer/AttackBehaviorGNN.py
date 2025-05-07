@@ -51,7 +51,6 @@ class AttackBehaviorGNN:
         self.scaler = torch.cuda.amp.GradScaler()
         self.embeddings = None  # Thêm biến lưu trữ embedding
 
-    # ... (giữ nguyên các phương thức hiện có)
     def prepare_data(self, df, feature_cols=None, timestamp_col='timestamps', label_col='label'):
         """
         Prepare graph data from DataFrame
@@ -69,6 +68,7 @@ class AttackBehaviorGNN:
 
         timestamps = df[timestamp_col].values
         labels = df[label_col].values
+        self.num_classes = len(np.unique(labels))
 
         # Generate graph
         self.graph_data = self.graph_generator.generate_graph(

@@ -341,6 +341,22 @@ services:
     networks:
       - attack-web
 
+  graph-embedding-service:
+    build:
+      context: ./graph-embedding-service
+      dockerfile: Dockerfile
+    container_name: graph-embedding-service
+    ports:
+      - 8005:8001
+    volumes:
+      - ./graph-embedding-service:/usr/src/app
+    depends_on:
+      - attack-web-db
+    env_file:
+      - .env
+    networks:
+      - attack-web
+
 networks:
   attack-web:
     driver: bridge

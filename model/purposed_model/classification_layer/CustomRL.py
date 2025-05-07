@@ -2,9 +2,11 @@ import numpy as np
 import torch
 from stable_baselines3 import DQN
 from stable_baselines3.common.vec_env import DummyVecEnv
+from torch.utils.data import DataLoader
 
 from purposed_model.classification_layer.CustomCallback import CustomCallback
 from purposed_model.classification_layer.CustomGymEnv import CustomGymEnv
+from purposed_model.classification_layer.SequenceDataset import SequenceDataset
 
 
 class CustomRL:
@@ -20,6 +22,18 @@ class CustomRL:
         self.batch_size = batch_size
         self.rl_agent = None
         self.training_history = {'rl_rewards': []}
+        self.info()
+
+    def info(self):
+        """Display model information"""
+        print("===== RL Model  =====")
+        print(f"Generator: {self.generator}")
+        print(f"Latent Size: {self.latent_size}")
+        print(f"Number of Classes: {self.num_classes}")
+        print(f"MLP Learning Rate: {self.learning_rate_mlp}")
+        print(f"Number of Episodes: {self.num_episodes}")
+        print(f"Batch Size: {self.batch_size}")
+        print("===============================")
 
     def train(self, dataloader):
         """Huấn luyện RL agent"""
@@ -68,3 +82,63 @@ class CustomRL:
         final_accuracy = np.mean(callbacks.episode_accuracies) if callbacks.episode_accuracies else 0
         print(f"Final Avg Reward: {np.mean(callbacks.episode_rewards):.4f}")
         print(f"Final Accuracy: {final_accuracy:.4f}")
+
+    def predict(self, states):
+        """
+        Dự đoán hành động từ trạng thái sử dụng RL agent.
+
+        Args:
+            states (torch.Tensor): Trạng thái đầu vào (latent features từ generator).
+
+        Returns:
+            np.ndarray: Hành động dự đoán (nhãn lớp).
+        """
+        if self.rl_agent is None:
+            raise ValueError("RL agent chưa được huấn luyện. Gọi train() trước.")
+
+        states = states.to(self.device)
+        actions, _ = self.rl_agent.predict(states.cpu().numpy(), deterministic=True)
+        return actions
+
+    def create_dataset(self, features, delta_t, labels, seq_len):
+        """
+        Tạo dataset cho RL từ dữ liệu đã tiền xử lý.
+
+        Args:
+            features (torch.Tensor): Đặc trưng đầu vào.
+            delta_t (torch.Tensor): Delta time.
+            labels (torch.Tensor): Nhãn.
+            seq_len (int): Độ dài chuỗi.
+
+        Returns:
+            SequenceDataset: Dataset cho RL.
+        """
+        return SequenceDataset(features, labels, delta_t, seq_len)
+
+    def create_dataloader(self, dataset, batch_size=None, shuffle=True):
+        """
+        Tạo DataLoader từ dataset.
+
+        Args:
+            dataset (SequenceDataset): Dataset đã tạo.
+            batch_size (int, optional): Kích thước batch. Nếu None, sử dụng self.batch_size.
+            shuffle (bool): Có xáo trộn dữ liệu không.
+
+        Returns:
+            DataLoader: DataLoader cho RL.
+        """
+        batch_size = batch_size or self.batch_size
+        return DataLoader(
+            dataset,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=8,
+            pin_memory=True
+        )
+
+    @property
+    def policy_net(self):
+        """Trả về policy network của DQN."""
+        if self.rl_agent is None:
+            raise ValueError("RL agent chưa được huấn luyện.")
+        return self.rl_agent.policy

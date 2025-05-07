@@ -1,0 +1,15 @@
+artifact_uri: file:///E:/Attack%20Recognization%20System/classification-service/mlruns/350813225617350748/a9a1df42768d4455b8498631dc26c9ed/artifacts
+end_time: 1746548844822
+entry_point_name: ''
+experiment_id: '350813225617350748'
+lifecycle_stage: active
+run_id: a9a1df42768d4455b8498631dc26c9ed
+run_name: handsome-flea-903
+run_uuid: a9a1df42768d4455b8498631dc26c9ed
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1746548841942
+status: 4
+tags: []
+user_id: ndtdu
